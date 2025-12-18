@@ -1,10 +1,19 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
+    "target": "ES6", // or ESNext
     "module": "commonjs",
-    "target": "es2020",
-    "esModuleInterop": true
+    "outDir": "./dist", // compiled JS goes here
+    "rootDir": "./src", // your TS source
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
