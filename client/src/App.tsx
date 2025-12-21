@@ -17,12 +17,8 @@ function App() {
 
     });
 
-    socket.on("seat-update", (data) => {
-      console.log("seat update", data);
-    });
-
     return () => {
-      socket.off("seat-update");
+      socket.off("connect");
     };
   }, [])
 
