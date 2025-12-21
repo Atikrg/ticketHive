@@ -23,6 +23,7 @@ function App() {
   }, [])
 
 
+  
   return <div className="place-items-center">
     <h4 className="mt-4 text-[24px]">TICKET HIVE</h4>
     <InputComponent />
