@@ -10,9 +10,10 @@ if (!socket_url) {
 }
 
 
-
 const socket = io("/", {
     path: "/socket.io",
+    transports: ["polling"],
+    timeout: 5000
 });
 
 
