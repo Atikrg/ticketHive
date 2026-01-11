@@ -4,7 +4,7 @@ import socket from "../utils/socket";
 import type { LayoutState } from "../types/layout.types";
 
 const InputComponent = () => {
-    const { layout, setLayout } = useLayoutStore();
+    const { setLayout } = useLayoutStore();
     const [error, setError] = useState<string>("");
 
     useEffect(() => {
