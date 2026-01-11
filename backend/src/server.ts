@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-import "./config/database.config";
+import "./database/database.config";
 import server from "./socket/socket";
+
 
 
 if (!process.env.PORT) {

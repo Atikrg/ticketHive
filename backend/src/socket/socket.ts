@@ -4,6 +4,12 @@ import app from "../app";
 import { LayoutModel } from "../models/layout.model";
 const server = http.createServer(app);
 import { generateSeats } from "../handler";
+import { layoutSchema } from "../schemas/seat.schema";
+import { CreateOrUpdateLayoutPayload } from "../types/layout.types";
+import { SeatStatus, SeatAction, SeatUpdateFilter, SeatArrayFilter, SeatUpdate } from "../types/seat.types";
+import { MongoStatusFilter } from "../types/seat.types";
+import { array } from "zod";
+
 const io = new Server(server, {
     cors: {
         origin: "*",
@@ -12,35 +18,42 @@ const io = new Server(server, {
 });
 
 
-const layoutId = "101";
 
 io.on("connection", async (socket) => {
     try {
-        let layout = await LayoutModel.findById(layoutId);
+        let layout = await LayoutModel.findOne();
+
         if (layout) {
             socket.emit("LAYOUT_CREATED", layout);
         }
 
-        socket.on("CREATE_LAYOUT", async (layout) => {
+        socket.on("CREATE_LAYOUT", async (layout: CreateOrUpdateLayoutPayload) => {
             const { rows, cols } = layout;
-            try {
-                let layout = await LayoutModel.findById(layoutId);
-                if (layout) {
+            const parsed = layoutSchema.safeParse(layout);
 
+            if (!parsed.success) {
+                socket.emit("LAYOUT_CREATE_ERROR", parsed.error.issues.map(e => e.message).join(", "));
+                return;
+            }
+
+            try {
+                let layout = await LayoutModel.findOne();
+
+
+                if (layout) {
                     const updatedSeats = generateSeats(rows, cols);
-                    const seatsMap = new Map(Object.entries(updatedSeats));
+
                     layout.rows = rows;
                     layout.cols = cols;
-                    layout.seats = seatsMap;
+                    layout.seats = updatedSeats;
                     await layout.save();
                 } else {
                     const seatsRecord = generateSeats(rows, cols);
+
                     layout = await LayoutModel.create({
-                        _id: layoutId,
                         rows,
                         cols,
                         seats: seatsRecord,
-                        createdAt: new Date(),
                     });
                 }
 
@@ -48,60 +61,113 @@ io.on("connection", async (socket) => {
                 socket.broadcast.emit("LAYOUT_CREATED", layout);
             } catch (error) {
                 console.error(error);
-                socket.emit("BUS_CREATE_ERROR", "Failed to create or update layout");
+                socket.emit("LAYOUT_CREATE_ERROR", "Failed to create or update layout");
             }
         });
-
 
         socket.on("UPDATE_USER_SEAT", async ({ seatId, userId, action }) => {
 
-            console.table({
-                seatId,
-                userId,
-                action
-            })
+            const lockDuration = 60_000;
+            const now = new Date();
 
-            const layout = await LayoutModel.findById(layoutId);
-            if (!layout) return;
+            let filter;
+            let arrayFilters;
+            let update;
 
-            const seat = layout.seats.get(seatId);
-            if (!seat) return;
+            if (action === SeatAction.RESERVE_SEAT) {
+                filter = {
+                    "seats.seat": seatId,
+                    "seats.status": SeatStatus.available,
+                    "seats.lockedBy": null
+                };
 
+                update = {
+                    $set: {
+                        "seats.$[seat].status": SeatStatus.reserved,
+                        "seats.$[seat].lockedBy": userId,
+                        "seats.$[seat].lockedUntil": new Date(now.getTime() + lockDuration),
+                    }
+                };
 
-            if (action === "RESERVE_SEAT") {
-
-                if (seat.status !== "available") return;
-
-                seat.status = "reserved";
-                seat.lockedBy = userId;
-                seat.lockedUntil = new Date(Date.now() + 60000);
+                arrayFilters = [
+                    {
+                        "seat.seat": seatId,
+                        "seat.status": SeatStatus.available,
+                        "seat.lockedBy": null
+                    }
+                ];
             }
 
 
-            if (action === "UNSELECT_SEAT") {
-                if (seat.lockedBy !== userId) return;
+            if (action === SeatAction.BOOK_SEAT) {
+                filter = {
+                    seats: {
+                        $elemMatch: {
+                            seat: seatId,
+                            status: { $in: [SeatStatus.available, SeatStatus.reserved] }
+                        }
+                    }
+                };
 
-                seat.status = "available";
-                seat.lockedBy = undefined;
-                seat.lockedUntil = undefined;
+                update = {
+                    $set: {
+                        "seats.$[seat].status": SeatStatus.booked,
+                        "seats.$[seat].bookedBy": userId,
+                        "seats.$[seat].lockedBy": userId,
+                        "seats.$[seat].lockedUntil": null
+                    }
+                };
+
+                arrayFilters = [
+                    {
+                        "seat.seat": seatId,
+                        "seat.status": { $in: [SeatStatus.available, SeatStatus.reserved] }
+                    }
+                ];
             }
 
 
-            if (action === "BOOK_SEAT") {
-                seat.status = "booked";
-                seat.bookedBy = userId;
-                seat.lockedBy = undefined;
-                seat.lockedUntil = undefined;
-            }
 
-            await layout.save();
-            io.emit("SEAT_UPDATED", layout);
+            try {
+                if (!filter || !update || !arrayFilters) {
+                    socket.emit("SEAT_UPDATE_FAILED", {
+                        seatId,
+                        reason: "Invalid action",
+                    });
+                    return;
+                }
+
+                const updatedLayout = await LayoutModel.findOneAndUpdate(
+                    filter,
+                    update,
+                    {
+                        arrayFilters,
+                        returnDocument: 'after',
+                        new: true
+                    }
+                );
+
+                if (!updatedLayout) {
+                    socket.emit("SEAT_UPDATE_FAILED", {
+                        seatId,
+                        reason: "Seat not available or already taken",
+                    });
+                    return;
+                }
+
+                io.emit("SEAT_UPDATED", updatedLayout);
+            } catch (err: any) {
+                console.error("Seat update error:", err);
+                socket.emit("SEAT_UPDATE_FAILED", {
+                    seatId,
+                    reason: "Something went wrong",
+                });
+            }
         });
 
-
-        socket.on("GET_CURRENT_BUS", async () => {
-            const layout = await LayoutModel.findById(layoutId);
-            socket.emit("CURRENT_BUS", layout);
+        socket.on("GET_CURRENT_LAYOUT", async () => {
+            const layout = await LayoutModel.findOne();
+            socket.emit("CURRENT_LAYOUT", layout);
         });
 
 
@@ -114,27 +180,5 @@ io.on("connection", async (socket) => {
     });
 });
 
-const checkExpiredLocks = async () => {
-    const layout = await LayoutModel.findById(layoutId);
-    if (!layout) return;
-    let changed = false;
-    const seats = layout.seats instanceof Map ? Object.fromEntries(layout.seats) : layout.seats;
-    Object.entries(seats).forEach(([seatId, seat]: any) => {
-        if (seat.status === "reserved" && seat.lockedUntil && new Date(seat.lockedUntil) <= new Date()) {
-            seat.status = "available";
-            seat.lockedBy = undefined;
-            seat.lockedUntil = undefined;
-            changed = true;
-        }
-    });
-
-    if (changed) {
-        // If you use Map in Mongo, convert back
-        layout.seats = new Map(Object.entries(seats));
-        await layout.save();
-        io.emit("SEAT_UPDATED", layout);
-    }
-};
-setInterval(checkExpiredLocks, 1000);
 
 export default server;

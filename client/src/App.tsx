@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import socket from "./utils/socket";
 import InputComponent from "./components/Input.component";
-import GenerateSeats from "./components/Seats.component";
+import SeatsGrid from "./components/SeatsGrid.component";
 import { useUserStore } from "./store/userStore.store";
 function App() {
   const { userUniqueId, setUserUniqueId } = useUserStore();
@@ -14,7 +14,6 @@ function App() {
         if (!userId) return;
         setUserUniqueId(userId);
       }
-
     });
 
     return () => {
@@ -26,7 +25,7 @@ function App() {
   return <div className="place-items-center">
     <h4 className="mt-4 text-[24px]">TICKET HIVE</h4>
     <InputComponent />
-    <GenerateSeats />
+    <SeatsGrid />
   </div>;
 }
 

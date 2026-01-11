@@ -38,9 +38,3 @@ This is a full-stack application containerized using **Docker** and **Docker Com
 ### Build and start containers
 ```bash
 docker-compose up --build
-```
-
-### Stop containers
-```bash
-docker-compose down
-```

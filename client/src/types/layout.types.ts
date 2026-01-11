@@ -5,12 +5,12 @@ export interface LayoutState {
   id: string;
   rows: number;
   cols: number;
-  seats: Record<string, Seat>;
+  seats: Seat[];
 }
 
 export interface Layout {
     id: string;
     rows: number;
     cols: number;
-    seats: Record<string, Seat>;
+    seats: Seat[];
 }

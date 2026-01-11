@@ -10,7 +10,7 @@ if (!socket_url) {
 }
 
 
-const socket = io("/", {
+const socket = io(socket_url, {
     path: "/socket.io",
     transports: ["polling"],
     timeout: 5000

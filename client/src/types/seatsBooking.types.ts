@@ -1,9 +1,11 @@
 export type SeatStatus = 'available' | 'locked' | 'booked' | 'reserved';
 import type { LayoutState } from "./layout.types";
+
 export interface Seat {
     seat: string;
     status: SeatStatus;
     lockedBy?: string;
+    lockedUntil?: number;
 }
 
 export interface SeatStoreState {
@@ -24,6 +26,7 @@ export interface SeatStoreState {
 }
 
 
+export type UIStatus = "available" | "selected" | "locked" | "booked";
 
 
 
