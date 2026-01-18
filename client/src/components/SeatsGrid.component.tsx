@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 
 import socket from "../utils/socket";
@@ -8,7 +8,7 @@ import { useUserStore } from "../store/userStore.store";
 import ConfirmBookingModal from "./ConfirmBookingModal/confirmBookingModal.component";
 import { isContiguousSeatSelection } from "../handler";
 import type { Seat, UIStatus } from "../types/seatsBooking.types";
-
+import type { LayoutState } from "../types/layout.types";
 /* ---------------- helpers ---------------- */
 
 const getRowLabel = (index: number) =>
@@ -27,27 +27,44 @@ const SeatsGrid = () => {
   const { layout, setLayout } = useLayoutStore();
   const { userUniqueId, selectedSeat, setSelectedSeat } = useUserStore();
 
+
+
   useEffect(() => {
-    socket.on("SEAT_UPDATED", setLayout);
-    socket.on("SEAT_UPDATE_FAILED", ({ reason }) =>
-      toast.error(reason)
-    );
+    const handleSeatUpdate = (updatedLayout: LayoutState) => {
+      setLayout(updatedLayout);
+    };
+
+    const handleSeatUpdateFailed = ({ reason }: { reason: string }) => {
+      toast.error(reason);
+    };
+
+    socket.on("SEAT_UPDATED", handleSeatUpdate);
+    socket.on("SEAT_UPDATE_FAILED", handleSeatUpdateFailed);
 
     return () => {
-      socket.off("SEAT_UPDATED");
-      socket.off("SEAT_UPDATE_FAILED");
+      socket.off("SEAT_UPDATED", handleSeatUpdate);
+      socket.off("SEAT_UPDATE_FAILED", handleSeatUpdateFailed);
     };
-  }, [setLayout]);
+  }, []); // ✅ empty dependency
 
-  const seatMap = useMemo(() => {
-    if (!layout) return new Map<string, Seat>();
-    return new Map(layout.seats.map(seat => [seat.seat, seat]));
-  }, [layout]);
+
+
+  const seats = layout?.seats;
+
+  const seatMap = seats
+    ? new Map(Object.values(seats).map(seat => [seat.seat, seat]))
+    : new Map<string, Seat>();
+
+
+
+
+
 
   const handleSeatClick = (seatId: string) => {
     if (!layout) return;
 
     const seat = seatMap.get(seatId);
+
     if (!seat || seat.status === "booked") return;
 
     if (
@@ -94,9 +111,10 @@ const SeatsGrid = () => {
     return "available";
   };
 
+
+
   if (!layout) return null;
 
-  console.log("hello");
   return (
     <div className="p-6 space-y-6">
       <div className="inline-block bg-gray-100 p-4 rounded-xl">

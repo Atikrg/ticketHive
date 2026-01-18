@@ -5,12 +5,7 @@ export interface LayoutState {
   id: string;
   rows: number;
   cols: number;
+  createdAt: string;
   seats: Seat[];
 }
 
-export interface Layout {
-    id: string;
-    rows: number;
-    cols: number;
-    seats: Seat[];
-}

@@ -9,6 +9,7 @@ if (!socket_url) {
     console.error(`⚠️ Socket URL is undefined for ENV_MODE: ${ENV_MODE}`);
 }
 
+console.log("SOCKET URL", socket_url);
 
 const socket = io(socket_url, {
     path: "/socket.io",

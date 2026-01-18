@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { SeatStoreState, Seat, SeatStatus } from "../types/seatsBooking.types";
+import type { SeatStoreState } from "../types/seatsBooking.types";
 
 export const useLayoutStore = create<SeatStoreState>((set) => ({
   seats: [],
@@ -7,21 +7,19 @@ export const useLayoutStore = create<SeatStoreState>((set) => ({
   layout: null,
 
   setLayout: (layout) =>
-    set((state) => ({
-      layout:
-        typeof layout === "function"
-          ? layout(state.layout)
-          : layout,
-    })),
+    set({
+      layout: layout
+        ? {
+          ...layout,
+          seats: Array.isArray(layout.seats)
+            ? layout.seats
+            : Object.values(layout.seats ?? {}),
+        }
+        : null,
+    }),
 
-  setError: (error: string) => set({ error }),
-
-  setSeats: (seats: Seat[]) => set({ seats }),
-
-  updateSeat: (seatId: string, status: SeatStatus) =>
-    set((state) => ({
-      seats: state.seats.map((seat) =>
-        seat.seat === seatId ? { ...seat, status } : seat
-      ),
-    })),
+  setError: (error) =>
+    set({
+      error,
+    }),
 }));

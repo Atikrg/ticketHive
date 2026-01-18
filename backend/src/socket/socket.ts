@@ -24,7 +24,7 @@ io.on("connection", async (socket) => {
         let layout = await LayoutModel.findOne();
 
         if (layout) {
-            socket.emit("LAYOUT_CREATED", layout);
+            socket.emit("LAYOUT_CREATED", JSON.stringify(layout));
         }
 
         socket.on("CREATE_LAYOUT", async (layout: CreateOrUpdateLayoutPayload) => {
@@ -56,6 +56,7 @@ io.on("connection", async (socket) => {
                         seats: seatsRecord,
                     });
                 }
+
 
                 socket.emit("LAYOUT_CREATED", layout);
                 socket.broadcast.emit("LAYOUT_CREATED", layout);
@@ -154,6 +155,7 @@ io.on("connection", async (socket) => {
                     });
                     return;
                 }
+
 
                 io.emit("SEAT_UPDATED", updatedLayout);
             } catch (err: any) {
