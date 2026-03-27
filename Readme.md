@@ -1,3 +1,11 @@
+# Video
+
+
+https://github.com/user-attachments/assets/e42fc388-39fc-4248-bce4-8f3934c1a44d
+
+
+
+
 # Dockerized Full-Stack Application (Nginx + TypeScript + Zod)
 
 This is a full-stack application containerized using **Docker** and **Docker Compose**.
