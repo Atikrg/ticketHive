@@ -56,10 +56,6 @@ const SeatsGrid = () => {
     : new Map<string, Seat>();
 
 
-
-
-
-
   const handleSeatClick = (seatId: string) => {
     if (!layout) return;
 

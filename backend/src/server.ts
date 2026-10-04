@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 import "./database/database.config";
 import server from "./socket/socket";
 
