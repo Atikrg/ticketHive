@@ -132,8 +132,10 @@ curl -s "localhost/socket.io/?EIO=4&transport=polling"
   `docker compose up --build` rather than `docker build .`.
 - The backend exits if it cannot reach MongoDB, so the compose file waits on a
   `mongo` healthcheck before starting it.
-- `backend/.env` and `client/.env` are gitignored and are **not** copied into the
-  images. Compose injects `PORT` and `MONGO_URI` as environment variables.
+- **No `.env` files.** All configuration lives in `docker-compose.yml`. Compose
+  injects `PORT` and `MONGO_URI` into the backend at runtime, and passes
+  `VITE_ENV_MODE` / `VITE_SOCKET_URL` to the client as build args. Change a value
+  there and rebuild; there is nothing else to edit.
 - The `/api/` proxy currently has no client-side caller — the app talks to the
   backend over Socket.IO only. It is wired up for future REST endpoints.
 - `client` and `backend` publish no host ports, so they are only reachable on the
